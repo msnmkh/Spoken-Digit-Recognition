@@ -1,143 +1,98 @@
-import numpy as np
+import warnings
 import os
 from hmmlearn import hmm
-from python_speech_features import mfcc
-from utills import Speech,SpeechRecognizer
-from shutil import copyfile
+import numpy as np
+from librosa.feature import mfcc
+import librosa
 import random
 
-CATEGORY = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']  # 10 categories
+def extract_mfcc(full_audio_path):
+    wave, sample_rate =  librosa.load(full_audio_path)
+    mfcc_features = mfcc(wave, sample_rate )
+    return mfcc_features
 
-def splitTrainAndTest(trainDir,testDir,mainSpokenDir):
-    rnd = random.sample(range(0,50), 12)
-    i = 1
-    cntTest = 0
-    cntTrain = 0
-    for f in os.listdir(mainSpokenDir):
-        if os.path.splitext(f)[1] == '.wav':
-            srcname = os.path.join(mainSpokenDir, f)
-            traindstname = os.path.join(trainDir, f)
-            testdstname = os.path.join(testDir, f)
-            if (i in rnd):
-                cntTest += 1
-                copyfile(srcname, testdstname)
-            else:
-                cntTrain += 1
-                copyfile(srcname, traindstname)
-            if(i==50):
-                i=1
-                rnd = random.sample(range(0, 50), 12)
-            else:
-                i+=1
-    print("rnd: ",rnd)
-    print("number of test data : " ,cntTest)
-    print("number of train data : ",cntTrain)
-
-def loadData(dirName):
-    fileList = [f for f in os.listdir(dirName) if os.path.splitext(f)[1] == '.wav']
-
-    speechList = []
+def buildDataSet(dir,rte):
+    # Filter out the wav audio files under the dir
+    fileList = [f for f in os.listdir(dir) if os.path.splitext(f)[1] == '.wav']
+    train_dataset = {}
+    test_dataset = {}
+    cnt=1
+    nm = int(rte*50)
+    rnd = random.sample(range(0,50), nm)
 
     for fileName in fileList:
-        speech = Speech(dirName, fileName)
-        speech.extractFeature()
-        speechList.append(speech)
+        tmp = fileName.split('.')[0]
+        label = tmp.split('_')[1]
+        feature = extract_mfcc(dir+fileName).T
+        if cnt in rnd:
+            if label not in test_dataset.keys():
+                test_dataset[label] = []
+                test_dataset[label].append(feature)
+            else:
+                exist_feature = test_dataset[label]
+                exist_feature.append(feature)
+                test_dataset[label] = exist_feature
+        else:
+            if label not in train_dataset.keys():
+                train_dataset[label] = []
+                train_dataset[label].append(feature)
+            else:
+                exist_feature = train_dataset[label]
+                exist_feature.append(feature)
+                train_dataset[label] = exist_feature
+        if (cnt == 50):
+            cnt = 1
+            rnd = random.sample(range(0, 50), 12)
+        else:
+            cnt += 1
 
-    # print(speechList)
-    return speechList
+    return train_dataset,test_dataset
 
-
-def training(speechList):
-    ''' HMM training '''
-    speechRecognizerList = []
-
-    # initialize speechRecognizer
-    for categoryId in CATEGORY:
-        speechRecognizer = SpeechRecognizer(categoryId)
-        speechRecognizerList.append(speechRecognizer)
-
-    # organize data into the same category
-    for speechRecognizer in speechRecognizerList:
-        for speech in speechList:
-            # print(speech.categoryId)
-            # print(speechRecognizer.categoryId)
-            # print("+++++++++++++++++++++++")
-            if speech.categoryId == speechRecognizer.categoryId:
-                speechRecognizer.trainData.append(speech.features)
-
-        # get hmm model
-        speechRecognizer.initModelParam(nComp=5, nMix=2,covarianceType='diag', n_iter=10,bakisLevel=2)
-        speechRecognizer.getHmmModel()
-    return speechRecognizerList
-
-
-def recognize(testSpeechList, speechRecognizerList):
-    ''' recognition '''
-    predictCategoryIdList = []
-
-    for testSpeech in testSpeechList:
-        scores = []
-
-        for recognizer in speechRecognizerList:
-            score = recognizer.hmmModel.score(testSpeech.features)
-            scores.append(score)
-
-        idx = scores.index(max(scores))
-        predictCategoryId = speechRecognizerList[idx].categoryId
-        predictCategoryIdList.append(predictCategoryId)
-
-    return predictCategoryIdList
-
-
-def calculateRecognitionRate(groundTruthCategoryIdList, predictCategoryIdList):
-    ''' calculate recognition rate '''
-    score = 0
-    length = len(groundTruthCategoryIdList)
-
-    for i in range(length):
-        gt = groundTruthCategoryIdList[i]
-        pr = predictCategoryIdList[i]
-
-        if gt == pr:
-            score += 1
-
-    recognitionRate = float(score) / length
-    return recognitionRate
+def train_GMMHMM(dataset):
+    GMMHMM_Models = {}
+    for label in dataset.keys():
+        model = hmm.GMMHMM()
+        trainData = dataset[label]
+        trData = np.vstack(trainData)
+        model.fit(trData)
+        GMMHMM_Models[label] = model
+    return GMMHMM_Models
 
 def main():
-    trainDir = 'train_spoken_digit/'
-    testDir = 'test_spoken_digit/'
-    mainSpokenDir = 'spoken_digit/'
-    splitTrainAndTest(trainDir, testDir, mainSpokenDir)
-    #
-    # ### Step.1 Loading training data
-    # print('Step.1 Training data loading...')
-    # trainSpeechList = loadData(trainDir)
-    # print('done!')
-    #
-    # ### Step.2 Training
-    # print('Step.2 Training model...')
-    # speechRecognizerList = training(trainSpeechList)
-    # print('done!')
-    #
-    # ### Step.3 Loading test data
-    # print('Step.3 Test data loading...')
-    # testSpeechList = loadData(testDir)
-    # print('done!')
-    #
-    # ### Step.4 Recognition
-    # print('Step.4 Recognizing...')
-    # predictCategoryIdList = recognize(testSpeechList, speechRecognizerList)
-    #
-    # ### Step.5 Print result
-    # groundTruthCategoryIdList = [speech.categoryId for speech in testSpeechList]
-    # recognitionRate = calculateRecognitionRate(groundTruthCategoryIdList, predictCategoryIdList)
-    #
-    # print('===== Final result =====')
-    # print('Ground Truth:\t', groundTruthCategoryIdList)
-    # print('Prediction:\t', predictCategoryIdList)
-    # print('Accuracy:\t', recognitionRate)
-    #
+    ### ignore warning message
+    warnings.filterwarnings('ignore')
+
+    ### Step.1 Loading data
+    trainDir = 'spoken_digit/'
+    print('Step.1 data loading...')
+    trainDataSet,testDataSet = buildDataSet(trainDir,rte=0.3)
+    print("Finish prepare the data")
+
+
+    ### Step.2 Training
+    print('Step.2 Training model...')
+    hmmModels = train_GMMHMM(trainDataSet)
+    print("Finish training of the GMM_HMM models for digits 0-9")
+
+
+    ### Step.3 predict test data
+    score_cnt = 0
+    for label in testDataSet.keys():
+        feature = testDataSet[label]
+        scoreList = {}
+        for model_label in hmmModels.keys():
+            model = hmmModels[model_label]
+            score = model.score(feature[0])
+            scoreList[model_label] = score
+        predict = max(scoreList, key=scoreList.get)
+        if predict == label:
+            score_cnt+=1
+    accuracy = 100.0*score_cnt/len(testDataSet.keys())
+    print("\n##########################################################################")
+    print("##################### A-C-C-U-R-A-C-Y ####################################")
+    print("#####################      ",accuracy,"%","     #################################")
+    print("##########################################################################")
+
 
 if __name__ == '__main__':
     main()
