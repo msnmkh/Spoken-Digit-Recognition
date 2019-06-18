@@ -35,9 +35,9 @@ Use [pip](https://pypi.org/project/pip/) to install any missing dependencies
 * Split train and test data
 * Feature extract each audio using mfcc
 * Transpose each audio signal matrix
-* 
-* librosa
-* random
+* Vstack each transpose audio signal matrix
+* Create Hidden Markov Modle
+* Test Audio signal and predict them
 
 
 ## Accuracy
