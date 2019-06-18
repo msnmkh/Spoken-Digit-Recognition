@@ -30,6 +30,16 @@ This code is written in python. To use it you will need:
 * random
 Use [pip](https://pypi.org/project/pip/) to install any missing dependencies
 
+
+## General Steps
+* Split train and test data
+* Feature extract each audio using mfcc
+* Transpose each audio signal matrix
+* 
+* librosa
+* random
+
+
 ## Accuracy
 100 %
 
