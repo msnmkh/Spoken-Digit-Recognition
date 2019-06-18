@@ -5,6 +5,8 @@
 <h4 align="center">
   🎙️ Spoken Digit Recognition with HMM
 </h4>
+
+
 ## Overview
 This project use mfcc feature extractor and Hidden Markove Model classification algorithm to  recognition  0 - 9 digit of  Kaggle dataset.
 
@@ -17,8 +19,6 @@ This project use mfcc feature extractor and Hidden Markove Model classification 
 ## Feature Extractor Algorithm
 * Mel-frequency Cepstrum
 
-## Architecture
-<p align="center"><img width=40% src="https://github.com/msnmkh/Persian-Handwritten-Digits-Image-Recognition/blob/master/media/core-stage-of-ocr.JPG"/></p>
 
 ## Code Requirements
 This code is written in python. To use it you will need:
