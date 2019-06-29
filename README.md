@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <h1 align="center">
   <img src="media/spoken.png" width="15%"><br/>Spoken Digit Recognition
 </h1>
