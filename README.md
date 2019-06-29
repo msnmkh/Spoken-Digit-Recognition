@@ -1,10 +1,4 @@
-<h1 align="center">
-  <img src="media/spoken.png" width="15%"><br/>Spoken Digit Recognition
-</h1>
 
-<h4 align="center">
-  🎙️ Spoken Digit Recognition with HMM
-</h4>
 
 
 ## Overview
@@ -41,7 +35,7 @@ Use [pip](https://pypi.org/project/pip/) to install any missing dependencies
 
 
 ## Accuracy
-100 %
+94 %
 
 
 ## Usage
